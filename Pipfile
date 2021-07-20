@@ -1,0 +1,24 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+django = "*"
+djangorestframework = "*"
+channels = "*"
+djangorestframework-simplejwt = "*"
+dj-rest-auth = "*"
+django-cors-headers = "*"
+requests = "*"
+requests-async = "*"
+pyjwt = "*"
+channels-redis = "*"
+psycopg2 = "*"
+psycopg2-binary = "*"
+pillow = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.8"
