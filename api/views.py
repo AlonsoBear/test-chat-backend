@@ -31,7 +31,7 @@ class FriendListView(generics.ListCreateAPIView):
 		try:
 			friends_list = FriendsList.objects.get(owner=request.user)
 		except:
-			return Response("Not Found", status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+			return Response({"UPROCESSABLE ENTITY":"Your friend list is empty", "code":"empty_friends_list"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
 		# RETRIEVES THE LIST OF FRIEND MODELS LINKES TO THE USERS FRIENDSLIST
 		friends = Friend.objects.filter(friends_list=friends_list)
