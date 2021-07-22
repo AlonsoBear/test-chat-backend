@@ -50,8 +50,10 @@ class FriendListView(generics.ListCreateAPIView):
 		except:
 			return Response("User not Found", status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 		# FUNCTION THAT CHECKS IF THERE IS ALREADY A FRIEND REQUEST IN PROGRESS, IF THERE IS 409 CONFLICT RESPONSE
-		if self.check_friend_request(request.user, friend_requested):
-			return Response(f"{friend_requested.username} has already sent you a friend request", status=status.HTTP_409_CONFLICT)
+
+		is_already_added, error_message = self.check_friend_request(request.user, friend_requested)
+		if is_already_added:
+			return Response(error_message, status=status.HTTP_409_CONFLICT)
 		# CREATES THE FRIEND REQUEST OBJECT, 409 CONFLICT IF THERE IS AN ISSUE
 		try:
 			friend_request = FriendRequest(user_sender=request.user, user_receiver=friend_requested)
@@ -66,10 +68,18 @@ class FriendListView(generics.ListCreateAPIView):
 	def check_friend_request(self, sender, receiver):
 		# RETRIEVES A FRIEND_REQUEST OBJECT WITH THE SPECITY DATA
 		friend_request = FriendRequest.objects.filter(user_sender=receiver, user_receiver=sender).first()
+		try:
+			sender_friends_list = FriendsList.objects.get(owner=sender)
+			is_already_friend = Friend.objects.get(friends_list=sender_friends_list, friend=receiver)
+			is_already_friend = True
+		except:
+			is_already_friend = False
 		# IF THE OBJECT EXISTS RETURNS TRUE, OTHERWISE RETURNS FALSE
 		if friend_request:
-			return True
-		return False
+			return True, f"{receiver} has already sent you a friend request"
+		elif is_already_friend == True:
+			return True, f"{receiver} is already your friend"
+		return False,  "No conflict"
 
 
 # GENERATES A LIST OF ALL THE FRIEND REQUESTS THE USER HAS
