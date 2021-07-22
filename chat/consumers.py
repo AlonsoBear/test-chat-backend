@@ -59,7 +59,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
 	async def new_chat(self, event):
 		await self.channel_layer.group_add(f'{event["chat_id"]}', self.channel_name)
-		print("NEW CHAT ADDED")
 
 	async def request_accepted(self, event):
 		await self.send(text_data=json.dumps({
@@ -69,6 +68,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
 	async def send_message(self, res):
 		await self.send(text_data=json.dumps({
+			'event': 'new_message',
 			'chat_id': res["chat_id"],
 			'author': res["author"],
             "message": res["message"],
