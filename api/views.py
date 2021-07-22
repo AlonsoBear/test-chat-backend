@@ -153,7 +153,6 @@ class MessageListView(APIView):
 		# IF THE CHAT EXISTS SETS THE DATA THAT IS GOING TO SEND
 		if chat:
 			messages = Message.objects.filter(chat=chat)
-			print(messages)
 			messages = [{'author':message.author.username, 'content':message.content, 'date_sent':message.date_sent} for message in messages]
 			return Response(data=messages, status=status.HTTP_200_OK)
 
@@ -251,7 +250,6 @@ class ChatListCreateView(APIView):
 			try:
 				# GETS THE LAST MESSAGE THAT WAS SAVED IN THE CHAT
 				message = Message.objects.filter(chat=chat).order_by('-date_sent')[0]
-				print(message.date_sent)
 			except:
 				message = "No messages yet"
 				modified_at = False
@@ -301,7 +299,7 @@ class ChatListCreateView(APIView):
 			chat_member = ChatMember(member=request.user)
 			chat.add_member(chat_member)
 
-			return Response(data={"id": chat.id, "name": chat.name}, status=status.HTTP_200_OK)
+			return Response(data={"id": chat.id, "name": chat.name}, status=status.HTTP_201_CREATED)
 		return Response({'Bad Request': 'Invalid data...'}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -312,7 +310,11 @@ class IndChatView(APIView):
 
 	# POST METHOD TO CREATE AN INDIVIDUAL CHAT WITH A FRIEND
 	def post(self, request):
-		channel_layer = get_channel_layer()
+		# SERIALIZES, VALIDATES AND SAVES (CREATES CHAT OBJECT) THE DATA
+		chat_serializer = self.serializer_class(data=request.data)
+		if not chat_serializer.is_valid():
+			return Response({'Bad Request': 'Invalid data...'}, status=status.HTTP_400_BAD_REQUEST)
+
 		# QUERY TO LOOK FOR FRIEND AND ADD IT TO CHAT, NO RESULT EQUALS CONFLICT STATUS
 		try:
 			friend_member = CustomUser.objects.get(username=request.data['friend_name'])
@@ -325,23 +327,20 @@ class IndChatView(APIView):
 		if check_matching_column(request.user, friend_member):
 			return Response("A chat already exists", status=status.HTTP_409_CONFLICT)
 
-		# SERIALIZES, VALIDATES AND SAVES (CREATES CHAT OBJECT) THE DATA
-		chat_serializer = self.serializer_class(data=request.data)
-		if chat_serializer.is_valid():
-			chat = chat_serializer.save()
+		chat = chat_serializer.save()
 
-			# ADDS FRIEND TO CHAT
-			chat_member = ChatMember(member=friend_member)
-			chat.add_member(chat_member)
+		# ADDS FRIEND TO CHAT
+		chat_member = ChatMember(member=friend_member)
+		chat.add_member(chat_member)
 
-			# ADDS CHAT CREATOR TO CHAT
-			chat_member = ChatMember(member=request.user)
-			chat.add_member(chat_member)
+		# ADDS CHAT CREATOR TO CHAT
+		chat_member = ChatMember(member=request.user)
+		chat.add_member(chat_member)
 
-			async_to_sync(channel_layer.group_send)(f"{friend_member.id}", {"type": "new.chat", "chat_id":f"{chat.id}"})
+		channel_layer = get_channel_layer()
+		async_to_sync(channel_layer.group_send)(f"{friend_member.id}", {"type": "new.chat", "chat_id":f"{chat.id}"})
 
-			return Response(data={"chat_id":chat.id}, status=status.HTTP_201_CREATED)
-		return Response({'Bad Request': 'Invalid data...'}, status=status.HTTP_400_BAD_REQUEST)
+		return Response(data={"chat_id":chat.id}, status=status.HTTP_201_CREATED)
 
 # METHOD THAT CHECKS IF A CHAT ALREADY EXITS
 def check_matching_column(user, friend):
@@ -390,7 +389,6 @@ class UploadProfilePictureView(APIView):
 		if not serializer.is_valid():
 			return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-		print(request.FILES['profile_pic'])
 		user = request.user
 		user.profile_picture=request.FILES['profile_pic']
 		user.save()
