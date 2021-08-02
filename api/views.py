@@ -48,7 +48,7 @@ class FriendListView(generics.ListCreateAPIView):
 		try:
 			friend_requested = CustomUser.objects.get(username=request.data["friend"])
 		except:
-			return Response("User not Found", status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+			return Response({"UPROCESSABLE ENTITY":"User not found", "code":"user_not_found"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 		# FUNCTION THAT CHECKS IF THERE IS ALREADY A FRIEND REQUEST IN PROGRESS, IF THERE IS 409 CONFLICT RESPONSE
 
 		is_already_added, error_message = self.check_friend_request(request.user, friend_requested)
@@ -236,10 +236,12 @@ class ChatDetailAddMemberView(APIView):
 		return Response({serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 	def delete(self, request, pk):
+		channel_layer = get_channel_layer()
 		try:
 			chat_member = ChatMember.objects.get(member=request.user, chat=pk)
 		except:
 			return Response("You are not a member of the chat", status=status.HTTP_409_CONFLICT)
+		async_to_sync(channel_layer.group_send)(f"{request.user.id}", {"type": "remove.chat", "chat_id":f"{pk}"})
 		chat_member.delete()
 		return Response("You are no longer a member of this chat", status=status.HTTP_200_OK)
 

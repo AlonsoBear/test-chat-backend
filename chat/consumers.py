@@ -60,6 +60,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
 	async def new_chat(self, event):
 		await self.channel_layer.group_add(f'{event["chat_id"]}', self.channel_name)
 
+	async def remove_chat(self, event):
+		await self.channel_layer.group_discard(f'{event["chat_id"]}', self.channel_name)
+
 	async def request_accepted(self, event):
 		await self.send(text_data=json.dumps({
 			'event': 'friend_request_accepted',
