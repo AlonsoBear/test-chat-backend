@@ -78,21 +78,36 @@ class ChatConsumer(AsyncWebsocketConsumer):
 		text_data_json = json.loads(text_data)
 		message = text_data_json['message']
 		chat_id = text_data_json['chat_id']
+		is_group = text_data_json['is_group']
+
+		if bool(is_group):
+			group_name = Chat.objects.filter(id=chat_id).first()
+
+
 		URL = f"http://127.0.0.1:8000/api/messages/{text_data_json['chat_id']}/"
 
 		my_headers = {"Authorization": f"JWT {self.token}"}
 		response = await arequests.post(url=URL, headers=my_headers, data={'content': text_data_json['message']})
 
 		if response.status_code == 201:
-			await self.channel_layer.group_send(str(chat_id), {
-			'type': "send_message",
-			'chat_id': chat_id,
-			'author': self.user_name,
-			'message':message,
-			})
-		else:
-			await self.send(text_data=json.dumps({
+			if is_group:
+				await self.channel_layer.group_send(str(chat_id), {
+				'type': "send_message",
+				'chat_id': chat_id,
+				'is_group': True,
+				'name': group_name.name,
+				'author': self.user_name,
+				'message':message,
+				})
+			else:
+				await self.channel_layer.group_send(str(chat_id), {
+				'type': "send_message",
 				'chat_id': chat_id,
 				'author': self.user_name,
+				'message':message,
+				})
+		else:
+			await self.send(text_data=json.dumps({
+				'type': "error",
 	            "message": "Message could not be sent",
 	        }))

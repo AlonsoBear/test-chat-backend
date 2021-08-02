@@ -12,9 +12,9 @@
     <script>
         //const roomName = JSON.parse(document.getElementById('room-name').textContent);
 		//const admin_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjI1MTY5NzI0LCJqdGkiOiJkOWQ4OGJlMmM5ODM0OWM5YjI2MWE3MjAwY2M0OWY2ZiIsInVzZXJfaWQiOjEsIm5hbWUiOiJhZG1pbiJ9.gKJZrtoDm0uOFv1DAA1bE4MfdjJC6PkxaGQjlgAPCqs"
-		const bear_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjI2Mzc2MzU3LCJqdGkiOiJhNWQ4YzY5MTk0MWM0MmViOGJjNWVlMThmMzYzYzliOSIsInVzZXJfaWQiOiIzMWQxMTRiMy02YzNmLTRkOGQtOTk0Yi05MmFlM2M4ZmU1NjkiLCJuYW1lIjoiYmVhciJ9.WJodSn8jOgGDz5BJ-BTFN53RL2i0jkLK757p1tSfFhk"
-		const lol_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjI2Mzc2NDQxLCJqdGkiOiJmMGVlNjU4OWY2ZDA0YTdmODkwYzZhNGQxNmJlYTE4NyIsInVzZXJfaWQiOiJkODgyZjhiNy0wYzhkLTQ4NmItYjJlZC1hNmFiZDlmZjczNmEiLCJuYW1lIjoibG9saXBvcHMifQ.AHhcP34L6PAu1k3tDpfUlOflLAdAZt6ICh5ttfVcWhw"
-		localStorage.setItem("access_token", lol_token)
+		const bear_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjI3MTQyODY0LCJqdGkiOiJjZDc1NTUwNWU0Zjg0YTVlOWYzMDkzNDkzOTIyOGI3OSIsInVzZXJfaWQiOiJhNzFmNDllNy01N2YzLTQ1MDAtYTZlNy02YmJhNzBkZjRmYWMiLCJuYW1lIjoiYmVhciJ9.1-ECcv2zBtDKb6kSVu2sI3HwTlPngfjFsDtMEH2kFvg"
+		const raul_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjI3MTQyODkzLCJqdGkiOiI4MGJhZGFkNTcyNTc0YWRmODBkMjMyYTZhNDU5OGEwMSIsInVzZXJfaWQiOiJmNzczMGRiNy1hYjg5LTQ2YzgtOGQzNi1hMThkNmQ3OGUyYTkiLCJuYW1lIjoicmF1bCJ9.MVtekgLH9iRAKjSYRyZcEMaz8OOdePCM-UO63vVZUhI"
+		localStorage.setItem("access_token", raul_token)
 		token = localStorage.getItem("access_token")
 		//document.cookie = 'authorization=55523; path=/; domain=http://www.bear-example.com;'
 		document.cookie = 'token=' + localStorage.getItem("access_token") +  '; SameSite=None; Secure=True; expires=' + new Date(8999, 0, 1).toUTCString();
@@ -47,7 +47,7 @@
         document.querySelector('#chat-message-submit').onclick = function(e) {
             const messageInputDom = document.querySelector('#chat-message-input');
             const message = messageInputDom.value;
-			const id =1;
+			const id = "00a79fb8-c20d-433b-ada2-50ea7ca1ea08";
 
             chatSocket.send(JSON.stringify({
 				"chat_id": id,
