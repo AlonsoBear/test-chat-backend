@@ -48,7 +48,7 @@ class FriendListView(generics.ListCreateAPIView):
 		try:
 			friend_requested = CustomUser.objects.get(username=request.data["friend"])
 		except:
-			return Response({"UPROCESSABLE ENTITY":"User not found", "code":"user_not_found"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+			return Response({"UPROCESSABLE ENTITY":"User not Found", "code":"user_not_found"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 		# FUNCTION THAT CHECKS IF THERE IS ALREADY A FRIEND REQUEST IN PROGRESS, IF THERE IS 409 CONFLICT RESPONSE
 
 		is_already_added, error_message = self.check_friend_request(request.user, friend_requested)
