@@ -98,7 +98,6 @@ class FriendSystemTest(TestCase):
 			HTTP_AUTHORIZATION = f'JWT {self.test_user_token}'
 		)
 		self.assertEqual(response.status_code, 422)
-		self.assertEqual(response.data, "User not Found")
 
 	def test_add_yourself_friend(self):
 		response = self.client.post(
