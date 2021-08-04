@@ -53,7 +53,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 	async def friend_request(self, event):
 		await self.send(text_data=json.dumps({
 			'event': 'new_friend_request',
-			'request_id': event["request_id"],
+			'id': event["request_id"],
 			'user_sender': event["user_sender"],
 		}))
 
@@ -71,7 +71,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 			'event': 'new_message',
 			'chat_id': res["chat_id"],
 			'author': res["author"],
-            "message": res["message"],
+            "content": res["message"],
         }))
 
 	async def receive(self, text_data):

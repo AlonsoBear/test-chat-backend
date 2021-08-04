@@ -339,6 +339,7 @@ class IndChatView(APIView):
 			chat.add_member(chat_member)
 
 			async_to_sync(channel_layer.group_send)(f"{friend_member.id}", {"type": "new.chat", "chat_id":f"{chat.id}"})
+			async_to_sync(channel_layer.group_send)(f"{request.user.id}", {"type": "new.chat", "chat_id":f"{chat.id}"})
 
 			return Response(data={"chat_id":chat.id}, status=status.HTTP_201_CREATED)
 		return Response({'Bad Request': 'Invalid data...'}, status=status.HTTP_400_BAD_REQUEST)
