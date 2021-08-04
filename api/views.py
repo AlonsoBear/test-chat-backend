@@ -211,7 +211,9 @@ class ChatDetailAddMemberView(APIView):
 	# POST METHOD, ALLOWS YOU TO ADD A MEMBER TO A CHAT
 	def post(self, request, pk):
 		# SERIALIZES THE REQUEST DATA
+		print(request.data)
 		serializer = self.serializer_class(data=request.data)
+		print("2")
 		# VALIDATES THE SERIALIZED DATA
 		if serializer.is_valid():
 			# CHECKS IF THE CHAT EXISTS, 409 IF NOT
