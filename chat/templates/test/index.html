@@ -1,60 +1,69 @@
 <!-- chat/templates/chat/room.html -->
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="utf-8"/>
+  <head>
+    <meta charset="utf-8" />
     <title>Chat Room</title>
-</head>
-<body>
-    <textarea id="chat-log" cols="100" rows="20"></textarea><br>
-    <input id="chat-message-input" type="text" size="100"><br>
-    <input id="chat-message-submit" type="button" value="Send">
+  </head>
+  <body>
+    <textarea id="chat-log" cols="100" rows="20"></textarea><br />
+    <input id="chat-message-input" type="text" size="100" /><br />
+    <input id="chat-message-submit" type="button" value="Send" />
     <script>
-        //const roomName = JSON.parse(document.getElementById('room-name').textContent);
-		//const admin_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjI1MTY5NzI0LCJqdGkiOiJkOWQ4OGJlMmM5ODM0OWM5YjI2MWE3MjAwY2M0OWY2ZiIsInVzZXJfaWQiOjEsIm5hbWUiOiJhZG1pbiJ9.gKJZrtoDm0uOFv1DAA1bE4MfdjJC6PkxaGQjlgAPCqs"
-		const bear_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjI2Mzc2MzU3LCJqdGkiOiJhNWQ4YzY5MTk0MWM0MmViOGJjNWVlMThmMzYzYzliOSIsInVzZXJfaWQiOiIzMWQxMTRiMy02YzNmLTRkOGQtOTk0Yi05MmFlM2M4ZmU1NjkiLCJuYW1lIjoiYmVhciJ9.WJodSn8jOgGDz5BJ-BTFN53RL2i0jkLK757p1tSfFhk"
-		const lol_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjI2Mzc2NDQxLCJqdGkiOiJmMGVlNjU4OWY2ZDA0YTdmODkwYzZhNGQxNmJlYTE4NyIsInVzZXJfaWQiOiJkODgyZjhiNy0wYzhkLTQ4NmItYjJlZC1hNmFiZDlmZjczNmEiLCJuYW1lIjoibG9saXBvcHMifQ.AHhcP34L6PAu1k3tDpfUlOflLAdAZt6ICh5ttfVcWhw"
-		localStorage.setItem("access_token", lol_token)
-		token = localStorage.getItem("access_token")
-		//document.cookie = 'authorization=55523; path=/; domain=http://www.bear-example.com;'
-		document.cookie = 'token=' + localStorage.getItem("access_token") +  '; SameSite=None; Secure=True; expires=' + new Date(8999, 0, 1).toUTCString();
+      //const roomName = JSON.parse(document.getElementById('room-name').textContent);
+      //const admin_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjI1MTY5NzI0LCJqdGkiOiJkOWQ4OGJlMmM5ODM0OWM5YjI2MWE3MjAwY2M0OWY2ZiIsInVzZXJfaWQiOjEsIm5hbWUiOiJhZG1pbiJ9.gKJZrtoDm0uOFv1DAA1bE4MfdjJC6PkxaGQjlgAPCqs"
+      const bear_token =
+        "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjI3MTQyODY0LCJqdGkiOiJjZDc1NTUwNWU0Zjg0YTVlOWYzMDkzNDkzOTIyOGI3OSIsInVzZXJfaWQiOiJhNzFmNDllNy01N2YzLTQ1MDAtYTZlNy02YmJhNzBkZjRmYWMiLCJuYW1lIjoiYmVhciJ9.1-ECcv2zBtDKb6kSVu2sI3HwTlPngfjFsDtMEH2kFvg";
+      const raul_token =
+        "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjI4MDk5NTA5LCJqdGkiOiIzZWE0ZTU2MDhhN2M0YzNiOGNhNmE1NDhjNDFhYTM0ZSIsInVzZXJfaWQiOiI5M2ZkNjYxMC1mZDRkLTQyZGItOWY3Mi1hOTE5M2E3NTgyOGQiLCJuYW1lIjoiYmVhcl8xIn0.kTODtU-SFAL3F-s1XPz_mq5KJUgc0bp3j8kuUIoncmg";
+      localStorage.setItem("access_token", raul_token);
+      token = localStorage.getItem("access_token");
+      //document.cookie = 'authorization=55523; path=/; domain=http://www.bear-example.com;'
+      document.cookie =
+        "token=" +
+        localStorage.getItem("access_token") +
+        "; SameSite=None; Secure=True; expires=" +
+        new Date(8999, 0, 1).toUTCString();
 
-        const chatSocket = new WebSocket('ws://127.0.0.1:8000/ws/chat/1/');
+      const chatSocket = new WebSocket("ws://127.0.0.1:8000/ws/chat/1/");
 
-        chatSocket.onmessage = function(e) {
-            const data = JSON.parse(e.data);
-			console.log(data);
-			if (data.error) {
-				alert(data.error);
-			}
-			else {
-				document.querySelector('#chat-log').value += (data.author + ": " + data.message + '\n');
-			}
-        };
+      chatSocket.onmessage = function (e) {
+        const data = JSON.parse(e.data);
+        console.log(data);
+        if (data.error) {
+          alert(data.error);
+        } else {
+          document.querySelector("#chat-log").value +=
+            data.author + ": " + data.message + "\n";
+        }
+      };
 
-        chatSocket.onclose = function(e) {
-			console.error(e)
-            console.error('Chat socket closed unexpectedly');
-        };
+      chatSocket.onclose = function (e) {
+        console.error(e);
+        console.error("Chat socket closed unexpectedly");
+      };
 
-        document.querySelector('#chat-message-input').focus();
-        document.querySelector('#chat-message-input').onkeyup = function(e) {
-            if (e.keyCode === 13) {  // enter, return
-                document.querySelector('#chat-message-submit').click();
-            }
-        };
+      document.querySelector("#chat-message-input").focus();
+      document.querySelector("#chat-message-input").onkeyup = function (e) {
+        if (e.keyCode === 13) {
+          // enter, return
+          document.querySelector("#chat-message-submit").click();
+        }
+      };
 
-        document.querySelector('#chat-message-submit').onclick = function(e) {
-            const messageInputDom = document.querySelector('#chat-message-input');
-            const message = messageInputDom.value;
-			const id =1;
+      document.querySelector("#chat-message-submit").onclick = function (e) {
+        const messageInputDom = document.querySelector("#chat-message-input");
+        const message = messageInputDom.value;
+        const id = "00a79fb8-c20d-433b-ada2-50ea7ca1ea08";
 
-            chatSocket.send(JSON.stringify({
-				"chat_id": id,
-                'message': message,
-            }));
-            messageInputDom.value = '';
-        };
+        chatSocket.send(
+          JSON.stringify({
+            chat_id: id,
+            message: message,
+          })
+        );
+        messageInputDom.value = "";
+      };
     </script>
-</body>
+  </body>
 </html>

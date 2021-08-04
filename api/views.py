@@ -48,10 +48,12 @@ class FriendListView(generics.ListCreateAPIView):
 		try:
 			friend_requested = CustomUser.objects.get(username=request.data["friend"])
 		except:
-			return Response("User not Found", status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+			return Response({"UPROCESSABLE ENTITY":"User not found", "code":"user_not_found"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 		# FUNCTION THAT CHECKS IF THERE IS ALREADY A FRIEND REQUEST IN PROGRESS, IF THERE IS 409 CONFLICT RESPONSE
-		if self.check_friend_request(request.user, friend_requested):
-			return Response(f"{friend_requested.username} has already sent you a friend request", status=status.HTTP_409_CONFLICT)
+
+		is_already_added, error_message = self.check_friend_request(request.user, friend_requested)
+		if is_already_added:
+			return Response(error_message, status=status.HTTP_409_CONFLICT)
 		# CREATES THE FRIEND REQUEST OBJECT, 409 CONFLICT IF THERE IS AN ISSUE
 		try:
 			friend_request = FriendRequest(user_sender=request.user, user_receiver=friend_requested)
@@ -66,10 +68,18 @@ class FriendListView(generics.ListCreateAPIView):
 	def check_friend_request(self, sender, receiver):
 		# RETRIEVES A FRIEND_REQUEST OBJECT WITH THE SPECITY DATA
 		friend_request = FriendRequest.objects.filter(user_sender=receiver, user_receiver=sender).first()
+		try:
+			sender_friends_list = FriendsList.objects.get(owner=sender)
+			is_already_friend = Friend.objects.get(friends_list=sender_friends_list, friend=receiver)
+			is_already_friend = True
+		except:
+			is_already_friend = False
 		# IF THE OBJECT EXISTS RETURNS TRUE, OTHERWISE RETURNS FALSE
 		if friend_request:
-			return True
-		return False
+			return True, f"{receiver} has already sent you a friend request"
+		elif is_already_friend == True:
+			return True, f"{receiver} is already your friend"
+		return False,  "No conflict"
 
 
 # GENERATES A LIST OF ALL THE FRIEND REQUESTS THE USER HAS
@@ -153,7 +163,6 @@ class MessageListView(APIView):
 		# IF THE CHAT EXISTS SETS THE DATA THAT IS GOING TO SEND
 		if chat:
 			messages = Message.objects.filter(chat=chat)
-			print(messages)
 			messages = [{'author':message.author.username, 'content':message.content, 'date_sent':message.date_sent} for message in messages]
 			return Response(data=messages, status=status.HTTP_200_OK)
 
@@ -227,10 +236,12 @@ class ChatDetailAddMemberView(APIView):
 		return Response({serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 	def delete(self, request, pk):
+		channel_layer = get_channel_layer()
 		try:
 			chat_member = ChatMember.objects.get(member=request.user, chat=pk)
 		except:
 			return Response("You are not a member of the chat", status=status.HTTP_409_CONFLICT)
+		async_to_sync(channel_layer.group_send)(f"{request.user.id}", {"type": "remove.chat", "chat_id":f"{pk}"})
 		chat_member.delete()
 		return Response("You are no longer a member of this chat", status=status.HTTP_200_OK)
 
@@ -251,7 +262,6 @@ class ChatListCreateView(APIView):
 			try:
 				# GETS THE LAST MESSAGE THAT WAS SAVED IN THE CHAT
 				message = Message.objects.filter(chat=chat).order_by('-date_sent')[0]
-				print(message.date_sent)
 			except:
 				message = "No messages yet"
 				modified_at = False
@@ -301,7 +311,7 @@ class ChatListCreateView(APIView):
 			chat_member = ChatMember(member=request.user)
 			chat.add_member(chat_member)
 
-			return Response(data={"id": chat.id, "name": chat.name}, status=status.HTTP_200_OK)
+			return Response(data={"id": chat.id, "name": chat.name}, status=status.HTTP_201_CREATED)
 		return Response({'Bad Request': 'Invalid data...'}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -312,7 +322,11 @@ class IndChatView(APIView):
 
 	# POST METHOD TO CREATE AN INDIVIDUAL CHAT WITH A FRIEND
 	def post(self, request):
-		channel_layer = get_channel_layer()
+		# SERIALIZES, VALIDATES AND SAVES (CREATES CHAT OBJECT) THE DATA
+		chat_serializer = self.serializer_class(data=request.data)
+		if not chat_serializer.is_valid():
+			return Response({'Bad Request': 'Invalid data...'}, status=status.HTTP_400_BAD_REQUEST)
+
 		# QUERY TO LOOK FOR FRIEND AND ADD IT TO CHAT, NO RESULT EQUALS CONFLICT STATUS
 		try:
 			friend_member = CustomUser.objects.get(username=request.data['friend_name'])
@@ -325,24 +339,21 @@ class IndChatView(APIView):
 		if check_matching_column(request.user, friend_member):
 			return Response("A chat already exists", status=status.HTTP_409_CONFLICT)
 
-		# SERIALIZES, VALIDATES AND SAVES (CREATES CHAT OBJECT) THE DATA
-		chat_serializer = self.serializer_class(data=request.data)
-		if chat_serializer.is_valid():
-			chat = chat_serializer.save()
+		chat = chat_serializer.save()
 
-			# ADDS FRIEND TO CHAT
-			chat_member = ChatMember(member=friend_member)
-			chat.add_member(chat_member)
+		# ADDS FRIEND TO CHAT
+		chat_member = ChatMember(member=friend_member)
+		chat.add_member(chat_member)
 
-			# ADDS CHAT CREATOR TO CHAT
-			chat_member = ChatMember(member=request.user)
-			chat.add_member(chat_member)
+		# ADDS CHAT CREATOR TO CHAT
+		chat_member = ChatMember(member=request.user)
+		chat.add_member(chat_member)
 
-			async_to_sync(channel_layer.group_send)(f"{friend_member.id}", {"type": "new.chat", "chat_id":f"{chat.id}"})
-			async_to_sync(channel_layer.group_send)(f"{request.user.id}", {"type": "new.chat", "chat_id":f"{chat.id}"})
+		channel_layer = get_channel_layer()
+		async_to_sync(channel_layer.group_send)(f"{friend_member.id}", {"type": "new.chat", "chat_id":f"{chat.id}"})
+		async_to_sync(channel_layer.group_send)(f"{request.user.id}", {"type": "new.chat", "chat_id":f"{chat.id}"})
 
-			return Response(data={"chat_id":chat.id}, status=status.HTTP_201_CREATED)
-		return Response({'Bad Request': 'Invalid data...'}, status=status.HTTP_400_BAD_REQUEST)
+		return Response(data={"chat_id":chat.id}, status=status.HTTP_201_CREATED)
 
 # METHOD THAT CHECKS IF A CHAT ALREADY EXITS
 def check_matching_column(user, friend):
@@ -391,7 +402,6 @@ class UploadProfilePictureView(APIView):
 		if not serializer.is_valid():
 			return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-		print(request.FILES['profile_pic'])
 		user = request.user
 		user.profile_picture=request.FILES['profile_pic']
 		user.save()
