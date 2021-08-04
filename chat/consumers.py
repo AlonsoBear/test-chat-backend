@@ -28,6 +28,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
 		chats = [chat_member.chat for chat_member in user_chat_members]
 		return chats
 
+	@sync_to_async
+	def get_user_specific_chat(self, id):
+		chat = Chat.objects.filter(id=id).first()
+		print(chat)
+		return chat.name
+
 
 	async def connect(self):
 		#print(self.scope['cookies']['token'])
@@ -84,7 +90,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
 		is_group = text_data_json['is_group']
 
 		if bool(is_group):
-			group_name = Chat.objects.filter(id=chat_id).first()
+			group_name = await self.get_user_specific_chat(chat_id)
+		print(group_name)
 
 
 		URL = f"http://127.0.0.1:8000/api/messages/{text_data_json['chat_id']}/"
@@ -98,10 +105,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
 				'type': "send_message",
 				'chat_id': chat_id,
 				'is_group': True,
-				'name': group_name.name,
+				'name': group_name,
 				'author': self.user_name,
 				'message':message,
 				})
+				print("SENT")
 			else:
 				await self.channel_layer.group_send(str(chat_id), {
 				'type': "send_message",
@@ -109,6 +117,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 				'author': self.user_name,
 				'message':message,
 				})
+				print("SENT")
 		else:
 			await self.send(text_data=json.dumps({
 				'type': "error",
