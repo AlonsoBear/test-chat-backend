@@ -31,7 +31,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
 	@sync_to_async
 	def get_user_specific_chat(self, id):
 		chat = Chat.objects.filter(id=id).first()
-		print(chat)
 		return chat.name
 
 
@@ -76,23 +75,26 @@ class ChatConsumer(AsyncWebsocketConsumer):
 		}))
 
 	async def send_message(self, res):
+		#print(res)
 		await self.send(text_data=json.dumps({
 			'event': 'new_message',
 			'chat_id': res["chat_id"],
+			'is_group': res["is_group"],
+			'name': res["name"],
 			'author': res["author"],
             "content": res["message"],
         }))
 
 	async def receive(self, text_data):
 		text_data_json = json.loads(text_data)
+		print(text_data_json)
 		message = text_data_json['message']
 		chat_id = text_data_json['chat_id']
 		is_group = text_data_json['is_group']
 
+
 		if bool(is_group):
 			group_name = await self.get_user_specific_chat(chat_id)
-		print(group_name)
-
 
 		URL = f"http://127.0.0.1:8000/api/messages/{text_data_json['chat_id']}/"
 
@@ -114,6 +116,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
 				await self.channel_layer.group_send(str(chat_id), {
 				'type': "send_message",
 				'chat_id': chat_id,
+				'is_group': False,
+				'name': self.user_name,
 				'author': self.user_name,
 				'message':message,
 				})

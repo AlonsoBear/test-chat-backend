@@ -211,9 +211,7 @@ class ChatDetailAddMemberView(APIView):
 	# POST METHOD, ALLOWS YOU TO ADD A MEMBER TO A CHAT
 	def post(self, request, pk):
 		# SERIALIZES THE REQUEST DATA
-		print(request.data)
 		serializer = self.serializer_class(data=request.data)
-		print("2")
 		# VALIDATES THE SERIALIZED DATA
 		if serializer.is_valid():
 			# CHECKS IF THE CHAT EXISTS, 409 IF NOT
@@ -223,11 +221,13 @@ class ChatDetailAddMemberView(APIView):
 			# EXTRACTS THE FRIEND LIST TO BE ADDED
 			friends_names = serializer.data.get("friends")
 			count=0
+			channel_layer = get_channel_layer()
 			for friend in friends_names:
 				try:
 					user = CustomUser.objects.get(username=friend["friend"])
 					member = ChatMember(member=user)
 					chat.add_member(member)
+					async_to_sync(channel_layer.group_send)(f"{member.member.id}", {"type": "new.chat", "chat_id":f"{chat.id}"})
 				except:
 					count += 1
 			if count != 0:
@@ -309,11 +309,14 @@ class ChatListCreateView(APIView):
 				return Response({'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 			chat.save()
 
+			channel_layer = get_channel_layer()
+			async_to_sync(channel_layer.group_send)(f"{request.user.id}", {"type": "new.chat", "chat_id":f"{chat.id}"})
+
 			# ESTABLISH THE CREATOR OF THE CHAT AS A MEMBER OF IT
 			chat_member = ChatMember(member=request.user)
 			chat.add_member(chat_member)
 
-			return Response(data={"id": chat.id, "name": chat.name}, status=status.HTTP_201_CREATED)
+			return Response(data={"id": chat.id, "name": chat.name, "is_group": chat.group_chat}, status=status.HTTP_201_CREATED)
 		return Response({'Bad Request': 'Invalid data...'}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -355,7 +358,7 @@ class IndChatView(APIView):
 		async_to_sync(channel_layer.group_send)(f"{friend_member.id}", {"type": "new.chat", "chat_id":f"{chat.id}"})
 		async_to_sync(channel_layer.group_send)(f"{request.user.id}", {"type": "new.chat", "chat_id":f"{chat.id}"})
 
-		return Response(data={"chat_id":chat.id}, status=status.HTTP_201_CREATED)
+		return Response(data={"chat_id":chat.id, "is_group": False}, status=status.HTTP_201_CREATED)
 
 # METHOD THAT CHECKS IF A CHAT ALREADY EXITS
 def check_matching_column(user, friend):
@@ -370,7 +373,8 @@ def check_matching_column(user, friend):
 		exact_chat = queryset_2.filter(chat=chat)
 		# TRUE IF A CHAT EXISTS
 		if exact_chat:
-			return exact_chat[0]
+			if exact_chat[0].chat.group_chat == False:
+				return exact_chat[0]
 	return None
 
 # SIGNUP VIEW FOR USERS
