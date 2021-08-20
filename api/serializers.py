@@ -72,15 +72,19 @@ class CustomUserSerializer(serializers.ModelSerializer):
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
-    @classmethod
-    def get_token(cls, user):
-        token = super(MyTokenObtainPairSerializer, cls).get_token(user)
+	@classmethod
+	def get_token(cls, user):
+		token = super(MyTokenObtainPairSerializer, cls).get_token(user)
 
-        token['name'] = user.username
-        return token
+		token['name'] = user.username
+		if user.profile_picture:
+			token['profile_pic'] = user.profile_picture.url
+		else:
+			token['profile_pic'] = ""
+		return token
 
 class ProfilePictureSerializer(serializers.Serializer):
 	profile_pic = serializers.ImageField()
 
 class RemoveGroupSerializer(serializers.Serializer):
-	group_id = serializers.UUIDField(format='hex_verbose') 
+	group_id = serializers.UUIDField(format='hex_verbose')

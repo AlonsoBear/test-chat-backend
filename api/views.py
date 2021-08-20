@@ -37,7 +37,14 @@ class FriendListView(generics.ListCreateAPIView):
 		friends = Friend.objects.filter(friends_list=friends_list)
 
 		# SPLITS THE DATA ONLY TO SHOW FRIEND NAME
-		friends = [{"name":friend.friend.username} for friend in friends]
+		friends_data = [{"name":friend.friend.username} for friend in friends]
+
+		for i, friend in friends:
+			if friend.friend.profile_picture:
+				friends_data[i]["profile_pic"] = friend.friend.profile_picture.url
+			else:
+				friends_data[i]["profile_pic"] = ""
+
 		return Response(data=friends, status=status.HTTP_200_OK)
 
 	# ******* THERE IS NO SERIALIZER VALIDATION *******
@@ -198,14 +205,23 @@ class ChatDetailAddMemberView(APIView):
 			chat = Chat.objects.get(id=pk)
 			chat_members = chat.chat_for_member.all()
 			# MAKES A LIST OF THE MEMBER USERNAMES
-			chat_members = [chat_member.member.username for chat_member in chat_members]
+			chat_members_json = []
+			for chat_member in chat_members:
+				member_data = {
+					"name":chat_member.member.username
+				}
+				if chat_member.member.profile_picture:
+					member_data["profile_pic"] = chat_member.member.profile_picture.url
+				else:
+					member_data["profile_pic"] = ""
+				chat_members_json.append(member_data)
 		except:
 			return Response("Chat not found", status=status.HTTP_409_CONFLICT)
 		self.check_object_permissions(request, chat)
 		return Response(data = {
 			"id":chat.id,
 			"name":chat.name,
-			"members":chat_members,
+			"members":chat_members_json,
 		}, status=status.HTTP_200_OK)
 
 	# POST METHOD, ALLOWS YOU TO ADD A MEMBER TO A CHAT
