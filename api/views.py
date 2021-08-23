@@ -39,7 +39,7 @@ class FriendListView(generics.ListCreateAPIView):
 		# SPLITS THE DATA ONLY TO SHOW FRIEND NAME
 		friends_data = [{"name":friend.friend.username} for friend in friends]
 
-		for i, friend in friends:
+		for i, friend in enumerate(friends):
 			if friend.friend.profile_picture:
 				friends_data[i]["profile_pic"] = friend.friend.profile_picture.url
 			else:
@@ -427,4 +427,4 @@ class UploadProfilePictureView(APIView):
 		user = request.user
 		user.profile_picture=request.FILES['profile_pic']
 		user.save()
-		return Response("", status=status.HTTP_200_OK)
+		return Response({"profile_pic": user.profile_picture.url}, status=status.HTTP_200_OK)
