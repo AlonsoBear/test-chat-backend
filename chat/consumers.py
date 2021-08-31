@@ -1,7 +1,8 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
 
-from api.models import Chat, ChatMember
+from users.models import CustomUser
+from api.models import Chat, ChatMember, Message
 from asgiref.sync import sync_to_async, async_to_sync
 
 import jwt
@@ -13,14 +14,14 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 class ChatConsumer(AsyncWebsocketConsumer):
 	responde = {}
 	key = settings.SECRET_KEY
-	user_id = ""
-	user_name = ""
+	user = None
 	token = ""
 
-	async def get_user_id_from_token(self, token):
+	@sync_to_async
+	def get_user_id_from_token(self, token):
 		decoded_data = jwt.decode(token, self.key, algorithms='HS256')
-		self.user_name = decoded_data["name"]
-		return decoded_data["user_id"]
+		user = CustomUser.objects.filter(id=decoded_data["user_id"]).first()
+		return user
 
 	@sync_to_async
 	def get_user_chats(self, id):
@@ -31,29 +32,44 @@ class ChatConsumer(AsyncWebsocketConsumer):
 	@sync_to_async
 	def get_user_specific_chat(self, id):
 		chat = Chat.objects.filter(id=id).first()
-		return chat.name
+		return chat, chat.name
 
+	@sync_to_async
+	def create_message(self, data):
+		record = Message(chat=data['chat'], author=self.user, content=data['message'])
+		record.save()
+		return record
 
 	async def connect(self):
-		#print(self.scope['cookies']['token'])
-		#print(self.scope['url_route']['kwargs']['pk'])
-		self.user_id = await self.get_user_id_from_token(self.scope['cookies']['token'])
-		self.token = self.scope['cookies']['token']
-		#if user_id == self.scope['url_route']['kwargs']['pk']:
-		#print(user_id)
-		#print(self.scope['url_route']['kwargs']['pk'])
-		chats = await self.get_user_chats(self.user_id)
-		chats_ids = [chat.id for chat in chats]
-		for id in chats_ids:
-			await self.channel_layer.group_add(f'{id}', self.channel_name)
-		await self.channel_layer.group_add(f"{self.user_id}", self.channel_name)
-		await self.accept()
+		dict_keys = list(self.scope["cookies"])
+		token_count = dict_keys.count("token")
+		if token_count:
+			try:
+				self.user = await self.get_user_id_from_token(self.scope['cookies']['token'])
+				self.token = self.scope['cookies']['token']
+				chats = await self.get_user_chats(self.user.id)
+				chats_ids = [chat.id for chat in chats]
+				for id in chats_ids:
+					await self.channel_layer.group_add(f'{id}', self.channel_name)
+				await self.channel_layer.group_add(f"{self.user.id}", self.channel_name)
+				await self.accept()
+			except Exception as e:
+				print("entrando 1")
+				await self.accept()
+				await self.close()
+		else:
+			print("entrando 2")
+			await self.accept()
+			await self.close()
 
 	async def disconnect(self, close_code):
-		chats = await self.get_user_chats(self.user_id)
-		chats_ids = [chat.id for chat in chats]
-		for id in chats_ids:
-			await self.channel_layer.group_discard(f'{id}', self.channel_name)
+		if not self.user:
+			pass
+		else:
+			chats = await self.get_user_chats(self.user.id)
+			chats_ids = [chat.id for chat in chats]
+			for id in chats_ids:
+				await self.channel_layer.group_discard(f'{id}', self.channel_name)
 
 	async def friend_request(self, event):
 		await self.send(text_data=json.dumps({
@@ -87,42 +103,36 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
 	async def receive(self, text_data):
 		text_data_json = json.loads(text_data)
-		print(text_data_json)
 		message = text_data_json['message']
 		chat_id = text_data_json['chat_id']
 		is_group = text_data_json['is_group']
 
+		chat, group_name = await self.get_user_specific_chat(chat_id)
 
-		if bool(is_group):
-			group_name = await self.get_user_specific_chat(chat_id)
-
-		URL = f"http://127.0.0.1:8000/api/messages/{text_data_json['chat_id']}/"
-
-		my_headers = {"Authorization": f"JWT {self.token}"}
-		response = await arequests.post(url=URL, headers=my_headers, data={'content': text_data_json['message']})
-
-		if response.status_code == 201:
+		try:
+			data = {"chat":chat, "message":message}
+			record = await self.create_message(data)
+			print(record)
 			if is_group:
 				await self.channel_layer.group_send(str(chat_id), {
 				'type': "send_message",
 				'chat_id': chat_id,
 				'is_group': True,
 				'name': group_name,
-				'author': self.user_name,
+				'author': self.user.username,
 				'message':message,
 				})
-				print("SENT")
 			else:
 				await self.channel_layer.group_send(str(chat_id), {
 				'type': "send_message",
 				'chat_id': chat_id,
 				'is_group': False,
-				'name': self.user_name,
-				'author': self.user_name,
+				'name': self.user.username,
+				'author': self.user.username,
 				'message':message,
 				})
-				print("SENT")
-		else:
+		except Exception as e:
+			print(e)
 			await self.send(text_data=json.dumps({
 				'type': "error",
 	            "message": "Message could not be sent",
