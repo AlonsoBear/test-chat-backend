@@ -17,6 +17,7 @@ channels-redis = "*"
 psycopg2 = "*"
 psycopg2-binary = "*"
 pillow = "*"
+daphne = "*"
 
 [dev-packages]
 

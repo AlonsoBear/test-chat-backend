@@ -1,11 +1,11 @@
 from django.urls import path, include
 from .views import FriendListView, MessageListView, IndChatView, ChatListCreateView, ChatDetailAddMemberView, \
 				   FriendRequestListView, FriendRequestDetailView, CustomUserCreate, ObtainTokenPairWithColorView, \
-				   UploadProfilePictureView
+				   UploadProfilePictureView, RefreshTokenView
 from rest_framework_simplejwt import views as jwt_views
 
 urlpatterns = [
-	path('token/refresh/', jwt_views.TokenRefreshView.as_view(), name='token_refresh'),
+	path('token/refresh/', RefreshTokenView.as_view(), name='token_refresh'),
 	path('token/', ObtainTokenPairWithColorView.as_view(), name='token_obtain_pair'),
 	path('friends/', FriendListView.as_view(), name='friend_list'),
 	path('chats/', IndChatView.as_view(), name='ind_chat'),

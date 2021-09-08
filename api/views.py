@@ -9,14 +9,14 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from users.models import CustomUser
 from .permissions import IsChatMember, IsFriend, IsRequestedUser
 from .models import Friend, Message, Chat, FriendsList, ChatMember, FriendRequest
 from .serializers import  AddFriendSerializer, MessageSerializer, ChatSerializer, IndividualChatSerializer, GroupChatSerializer,\
  						  AddMemberSerializer, FriendRequestSerializer, AcceptFriendRequestSerializer, CustomUserSerializer, \
-						  MyTokenObtainPairSerializer, ProfilePictureSerializer, RemoveGroupSerializer
+						  MyTokenObtainPairSerializer, ProfilePictureSerializer, RemoveGroupSerializer, MyTokenRefreshPairSerializer
 
 # ADD FRIEND AND GET A FRIENDS LIST FOR EACH USER
 class FriendListView(generics.ListCreateAPIView):
@@ -45,7 +45,7 @@ class FriendListView(generics.ListCreateAPIView):
 			else:
 				friends_data[i]["profile_pic"] = ""
 
-		return Response(data=friends, status=status.HTTP_200_OK)
+		return Response(data=friends_data, status=status.HTTP_200_OK)
 
 	# ******* THERE IS NO SERIALIZER VALIDATION *******
 	# CREATE METHOD TO ADD A FRIEND TO A USERS FRIENDS LIST
@@ -415,6 +415,10 @@ class CustomUserCreate(APIView):
 class ObtainTokenPairWithColorView(TokenObtainPairView):
     permission_classes = (AllowAny,)
     serializer_class = MyTokenObtainPairSerializer
+
+class RefreshTokenView(TokenRefreshView):
+	permission_classes = (AllowAny,)
+	serializer_class = MyTokenRefreshPairSerializer
 
 class UploadProfilePictureView(APIView):
 	serializer_class = ProfilePictureSerializer

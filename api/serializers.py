@@ -1,7 +1,9 @@
 from rest_framework import serializers
 from .models import  Message, Friend, Chat, ChatMember, FriendRequest
 from users.models import CustomUser
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
+from rest_framework_simplejwt.settings import api_settings
+from rest_framework_simplejwt.tokens import RefreshToken
 
 class AddFriendSerializer(serializers.Serializer):
 	friend = serializers.CharField()
@@ -75,13 +77,40 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 	@classmethod
 	def get_token(cls, user):
 		token = super(MyTokenObtainPairSerializer, cls).get_token(user)
-
 		token['name'] = user.username
 		if user.profile_picture:
 			token['profile_pic'] = user.profile_picture.url
 		else:
 			token['profile_pic'] = ""
 		return token
+
+class MyTokenRefreshPairSerializer(TokenRefreshSerializer):
+
+	def validate(self, attrs):
+		refresh = RefreshToken(attrs['refresh'])
+
+		access = refresh.access_token
+		user_id = access['user_id']
+		user = CustomUser.objects.filter(id=user_id).first()
+		access['profile_pic'] = user.profile_picture.url
+		data = {'access': str(access)}
+
+		if api_settings.ROTATE_REFRESH_TOKENS:
+			if api_settings.BLACKLIST_AFTER_ROTATION:
+				try:
+					# Attempt to blacklist the given refresh token
+					refresh.blacklist()
+				except AttributeError:
+					# If blacklist app not installed, `blacklist` method will
+					# not be present
+					pass
+
+			refresh.set_jti()
+			refresh.set_exp()
+
+			data['refresh'] = str(refresh)
+
+		return data
 
 class ProfilePictureSerializer(serializers.Serializer):
 	profile_pic = serializers.ImageField()
